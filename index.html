@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>联系我 · Contact</title>
+  <meta name="description" content="我的联系方式" />
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card: #1e293b;
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+      --accent: #38bdf8;
+      --border: #334155;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      background: radial-gradient(circle at 50% 0%, #1e293b 0%, #0f172a 60%);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    }
+    .card {
+      width: 100%;
+      max-width: 460px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 36px 28px;
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+    }
+    .avatar {
+      width: 84px;
+      height: 84px;
+      border-radius: 50%;
+      margin: 0 auto 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 34px;
+      font-weight: 700;
+      background: linear-gradient(135deg, var(--accent), #6366f1);
+      color: #0f172a;
+    }
+    h1 { font-size: 22px; text-align: center; }
+    .subtitle {
+      text-align: center;
+      color: var(--muted);
+      font-size: 14px;
+      margin: 8px 0 26px;
+    }
+    .links { display: flex; flex-direction: column; gap: 12px; }
+    a.link {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 14px 16px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.02);
+      color: var(--text);
+      text-decoration: none;
+      transition: transform .15s ease, border-color .15s ease, background .15s ease;
+    }
+    a.link:hover {
+      transform: translateY(-2px);
+      border-color: var(--accent);
+      background: rgba(56, 189, 248, 0.08);
+    }
+    .icon {
+      width: 38px;
+      height: 38px;
+      flex: 0 0 38px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      background: rgba(56, 189, 248, 0.12);
+    }
+    .label { font-size: 13px; color: var(--muted); }
+    .value { font-size: 15px; word-break: break-all; }
+    footer {
+      margin-top: 24px;
+      text-align: center;
+      font-size: 12px;
+      color: var(--muted);
+    }
+  </style>
+</head>
+<body>
+  <main class="card">
+    <div class="avatar">L</div>
+    <h1>Your Name</h1>
+    <p class="subtitle">Your Tagline · 欢迎随时联系</p>
+
+    <nav class="links">
+      <a class="link" href="mailto:your@email.com">
+        <span class="icon">✉️</span>
+        <span><span class="label">邮箱 Email</span><br /><span class="value">your@email.com</span></span>
+      </a>
+      <a class="link" href="tel:+8613800000000">
+        <span class="icon">📱</span>
+        <span><span class="label">电话 Phone</span><br /><span class="value">+86 138 0000 0000</span></span>
+      </a>
+      <a class="link" href="https://weixin.qq.com/">
+        <span class="icon">💬</span>
+        <span><span class="label">微信 WeChat</span><br /><span class="value">your-wechat-id</span></span>
+      </a>
+      <a class="link" href="https://t.me/your_username">
+        <span class="icon">➤</span>
+        <span><span class="label">Telegram</span><br /><span class="value">@your_username</span></span>
+      </a>
+      <a class="link" href="https://github.com/loveshota">
+        <span class="icon">🐙</span>
+        <span><span class="label">GitHub</span><br /><span class="value">github.com/loveshota</span></span>
+      </a>
+      <a class="link" href="https://your-website.com">
+        <span class="icon">🌐</span>
+        <span><span class="label">网站 Website</span><br /><span class="value">your-website.com</span></span>
+      </a>
+    </nav>
+
+    <footer>© <span id="year"></span> Your Name</footer>
+  </main>
+  <script>document.getElementById("year").textContent = new Date().getFullYear();</script>
+</body>
+</html>
