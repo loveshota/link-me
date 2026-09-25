@@ -18,7 +18,6 @@ python3 -m http.server 8080
 | `Your Name` | 你的名字 / 昵称 |
 | `Your Tagline` | 一句话简介 |
 | `your@email.com` | 邮箱 |
-| `+86 138 0000 0000` | 电话 / WhatsApp / Signal |
 | `@your_username` | Telegram / X / Instagram 用户名 |
 | `your_username#0000` | Discord 用户名 |
 | `linkedin.com/in/your_username` | LinkedIn |
