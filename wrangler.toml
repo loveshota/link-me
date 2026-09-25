@@ -6,6 +6,9 @@ compatibility_date = "2026-09-25"
 directory = "./public"
 binding = "ASSETS"
 
+[vars]
+APP_NAME = "link-me"
+
 [[kv_namespaces]]
 binding = "CONTACTS_KV"
 id = "REPLACE_WITH_YOUR_KV_NAMESPACE_ID"

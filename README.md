@@ -13,7 +13,7 @@
 3. 自动创建并绑定 KV 命名空间 `CONTACTS_KV`（无需手动建库、填 ID）；
 4. 自动配置 Workers Builds（CI/CD）并完成部署，之后每次 push 自动构建发布。
 
-> 仓库需为 **public**，一键部署按钮才可用。可选：在部署页面为 `SETUP_TOKEN` 填入一个口令，防止他人抢先初始化管理员（见下）。
+> 仓库需为 **public**，一键部署按钮才可用。整个流程**无需手动填写任何内容**：KV 自动创建、`APP_NAME` 等均有默认值，直接点下一步即可。若担心他人抢先初始化管理员，可在部署完成后另行设置 `SETUP_TOKEN`（见「安全说明」）。
 
 也可以把仓库 URL 直接粘到 [deploy.workers.cloudflare.com](https://deploy.workers.cloudflare.com/) 使用。
 
