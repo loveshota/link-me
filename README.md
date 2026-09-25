@@ -13,6 +13,9 @@
 | `functions/api/session.js` | 查询登录状态 |
 | `functions/api/logout.js` | 退出登录 |
 | `functions/_lib/` | 鉴权、TOTP、KV 读写逻辑 |
+| `public/_headers` | 安全响应头 + 后台禁缓存 |
+| `public/_routes.json` | 仅 `/api/*` 触发 Functions，静态资源直出 |
+| `public/robots.txt` | 禁止抓取 `/admin`、`/api/` |
 | `scripts/gen-2fa.mjs` | 生成 TOTP 密钥和二维码链接 |
 
 数据存储在 KV 的 `contacts` 键中，未写入时使用默认占位数据。
@@ -73,14 +76,17 @@ npm run dev
 1. 先在 Cloudflare 创建 KV 命名空间：**Workers & Pages → KV → Create namespace**，例如 `link-me-contacts`，复制它的 ID。
 2. 把 `wrangler.toml` 中的 `id = "REPLACE_WITH_YOUR_KV_NAMESPACE_ID"` 替换为该 ID，提交推送。
 3. **Workers & Pages → Create → Pages → Connect to Git**，选择本仓库。
-   - Build command：留空
+   - Build command：`exit 0`（无框架时使用）
    - Build output directory：`public`
 4. 在 Pages 项目的 **Settings → Variables and Secrets** 添加加密变量：
    - `ADMIN_PASSWORD`
    - `SESSION_SECRET`
    - `TOTP_SECRET`
-5. 在 **Settings → Functions → KV namespace bindings** 绑定变量名 `CONTACTS_KV` 到第 1 步的命名空间（若 `wrangler.toml` 已配置 ID 则可跳过）。
+5. 在 **Settings → Functions → KV namespace bindings** 绑定变量名 `CONTACTS_KV` 到第 1 步的命名空间（`wrangler.toml` 已配置 ID 时可跳过）。
 6. 重新部署，访问 `https://<项目>.pages.dev/admin` 登录管理。
+
+> 生产环境变量在 **Settings → Variables and Secrets** 配置，与本地 `.dev.vars` 同名同值。
+> `public/_routes.json` 只把 `/api/*` 交给 Functions，其余静态资源直接由 Pages 边缘返回，减少函数调用。
 
 ### 方式 B：命令行部署
 
@@ -95,9 +101,12 @@ npm run deploy
 
 ## 安全说明
 
-- 后台入口 `/admin` 已加 `noindex`，但建议再配合 Cloudflare Access 或 IP 限制。
+- 后台入口 `/admin` 已加 `noindex` 与 `robots.txt`，但建议再配合 Cloudflare Access 或 IP 限制。
+- 登录失败按 IP 累计，10 次/10 分钟后限流（HTTP 429），成功后清零。
 - 会话 Cookie 为 HttpOnly、SameSite=Strict，HTTPS 下自动带 Secure；有效期 7 天。
 - TOTP 校验允许前后 1 个时间窗（±30 秒）以容忍时钟偏差。
+- `_headers` 已设置 CSP、X-Frame-Options、nosniff 等安全头。
+- 只允许 `http(s)`、`mailto:`、`tel:` 协议的链接，拦截 `javascript:` 等注入。
 - 不要提交 `.dev.vars`（已在 `.gitignore` 中）。
 
 ## 自定义域名
