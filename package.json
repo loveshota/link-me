@@ -5,10 +5,12 @@
   "type": "module",
   "scripts": {
     "dev": "wrangler pages dev",
-    "deploy": "wrangler pages deploy",
-    "gen-2fa": "node scripts/gen-2fa.mjs"
+    "deploy": "wrangler pages deploy"
   },
   "devDependencies": {
     "wrangler": "^4.0.0"
+  },
+  "dependencies": {
+    "qrcode-generator": "^2.0.4"
   }
 }

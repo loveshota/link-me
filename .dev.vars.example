@@ -1,3 +1,12 @@
-ADMIN_PASSWORD=replace-with-a-strong-password
-SESSION_SECRET=replace-with-32-byte-random-hex
-TOTP_SECRET=REPLACE_WITH_BASE32_TOTP_SECRET
+# 首次访问 /admin 时会强制设置管理员密码和 2FA，以下均为可选项。
+
+# 可选：初始化口令。设置后，首次初始化必须填写相同的口令，
+# 防止他人抢先占用管理员。留空则不校验。
+SETUP_TOKEN=
+
+# 可选：自定义会话签名密钥（64 位十六进制）。
+# 不填则使用初始化时自动生成的随机密钥。
+SESSION_SECRET=
+
+# 可选：2FA 验证器中显示的应用名。
+APP_NAME=link-me

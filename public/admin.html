@@ -74,7 +74,29 @@
     .msg { font-size: 13px; margin-top: 12px; min-height: 18px; }
     .msg.error { color: #f87171; }
     .msg.ok { color: var(--ok); }
-    .hint { color: var(--muted); font-size: 12px; margin-top: 6px; }
+    .hint { color: var(--muted); font-size: 12px; margin-top: 6px; line-height: 1.6; }
+    .qr-box {
+      background: #fff;
+      border-radius: 12px;
+      padding: 12px;
+      width: 220px;
+      height: 220px;
+      margin: 0 auto 16px;
+    }
+    .qr-box svg { width: 100%; height: 100%; display: block; }
+    .secret {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 13px;
+      background: #0b1220;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 12px;
+      word-break: break-all;
+      text-align: center;
+    }
+    .steps { display: flex; gap: 8px; align-items: center; font-size: 12px; color: var(--muted); margin-bottom: 18px; }
+    .steps b { color: var(--accent); }
+    .step-actions { display: flex; gap: 10px; margin-top: 8px; }
     @media (max-width: 680px) {
       .row-head { display: none; }
       .row { grid-template-columns: 48px 1fr; grid-auto-rows: auto; }
@@ -85,6 +107,44 @@
 </head>
 <body>
   <div class="wrap">
+    <section id="setupPanel" class="panel hidden">
+      <h1>首次初始化</h1>
+      <div class="steps"><span>① 设置密码</span> → <span>② 扫码绑定 2FA</span></div>
+
+      <form id="setupForm">
+        <div class="field">
+          <label for="newPassword">设置管理员密码（至少 8 位）</label>
+          <input id="newPassword" type="password" autocomplete="new-password" minlength="8" required />
+        </div>
+        <div class="field">
+          <label for="confirmPassword">确认密码</label>
+          <input id="confirmPassword" type="password" autocomplete="new-password" minlength="8" required />
+        </div>
+        <div class="field hidden" id="setupTokenField">
+          <label for="setupToken">初始化口令（SETUP_TOKEN）</label>
+          <input id="setupToken" type="password" autocomplete="off" />
+        </div>
+        <button class="primary" type="submit">生成 2FA 二维码</button>
+        <p id="setupMsg" class="msg"></p>
+      </form>
+
+      <div id="setupStep2" class="hidden">
+        <p class="hint" style="margin-bottom:12px">用 Google Authenticator / Authy / 1Password 等扫描二维码，然后输入 6 位验证码完成绑定。</p>
+        <div id="qrBox" class="qr-box"></div>
+        <p class="hint" style="text-align:center;margin-bottom:6px">无法扫码？手动输入密钥：</p>
+        <div id="secretText" class="secret"></div>
+        <div class="field" style="margin-top:16px">
+          <label for="setupTotp">输入验证器中的 6 位验证码</label>
+          <input id="setupTotp" type="text" inputmode="numeric" pattern="\d{6}" maxlength="6" autocomplete="one-time-code" />
+        </div>
+        <div class="step-actions">
+          <button id="completeSetup" class="primary" type="button">完成绑定</button>
+          <button id="restartSetup" type="button">返回重设</button>
+        </div>
+        <p id="setupStep2Msg" class="msg"></p>
+      </div>
+    </section>
+
     <section id="loginPanel" class="panel hidden">
       <h1>管理员登录</h1>
       <form id="loginForm">
@@ -97,7 +157,6 @@
           <input id="totp" type="text" inputmode="numeric" pattern="\d{6}" maxlength="6" autocomplete="one-time-code" required />
         </div>
         <button class="primary" type="submit">登录</button>
-        <p class="hint">密码 + 手机验证器（TOTP）双重验证</p>
         <p id="loginMsg" class="msg"></p>
       </form>
     </section>
@@ -124,16 +183,27 @@
   </div>
 
   <script>
+    const setupPanel = document.getElementById("setupPanel");
     const loginPanel = document.getElementById("loginPanel");
     const editorPanel = document.getElementById("editorPanel");
     const rowsEl = document.getElementById("rows");
     const loginMsg = document.getElementById("loginMsg");
+    const setupMsg = document.getElementById("setupMsg");
+    const setupStep2Msg = document.getElementById("setupStep2Msg");
     const editorMsg = document.getElementById("editorMsg");
     let contacts = [];
+    let pendingSetup = null;
 
     function showMsg(el, text, type) {
       el.textContent = text;
       el.className = "msg " + (type || "");
+    }
+
+    function showPanel(name) {
+      setupPanel.classList.add("hidden");
+      loginPanel.classList.add("hidden");
+      editorPanel.classList.add("hidden");
+      ({ setup: setupPanel, login: loginPanel, editor: editorPanel }[name]).classList.remove("hidden");
     }
 
     function rowTemplate(item, index) {
@@ -196,21 +266,76 @@
       renderRows();
     }
 
-    async function checkSession() {
-      try {
-        const res = await fetch("/api/session", { cache: "no-store" });
-        const data = await res.json();
-        return !!data.authenticated;
-      } catch {
-        return false;
-      }
-    }
-
     async function showEditor() {
-      loginPanel.classList.add("hidden");
-      editorPanel.classList.remove("hidden");
+      showPanel("editor");
       await loadContacts();
     }
+
+    document.getElementById("setupForm").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const password = document.getElementById("newPassword").value;
+      if (password !== document.getElementById("confirmPassword").value) {
+        showMsg(setupMsg, "两次输入的密码不一致", "error");
+        return;
+      }
+      showMsg(setupMsg, "生成中…", "");
+      try {
+        const res = await fetch("/api/setup/start", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            password,
+            setupToken: document.getElementById("setupToken").value,
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          showMsg(setupMsg, data.error || "初始化失败", "error");
+          return;
+        }
+        pendingSetup = { setupId: data.setupId, password };
+        showMsg(setupMsg, "", "");
+        document.getElementById("qrBox").innerHTML = data.qrSvg;
+        document.getElementById("secretText").textContent = data.secret;
+        document.getElementById("setupForm").classList.add("hidden");
+        document.getElementById("setupStep2").classList.remove("hidden");
+      } catch {
+        showMsg(setupMsg, "网络错误，请重试", "error");
+      }
+    });
+
+    document.getElementById("restartSetup").onclick = () => {
+      pendingSetup = null;
+      document.getElementById("setupStep2").classList.add("hidden");
+      document.getElementById("setupForm").classList.remove("hidden");
+      showMsg(setupStep2Msg, "", "");
+    };
+
+    document.getElementById("completeSetup").onclick = async () => {
+      if (!pendingSetup) return;
+      showMsg(setupStep2Msg, "验证中…", "");
+      try {
+        const res = await fetch("/api/setup/complete", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            setupId: pendingSetup.setupId,
+            password: pendingSetup.password,
+            totp: document.getElementById("setupTotp").value.trim(),
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          showMsg(setupStep2Msg, data.error || "验证失败", "error");
+          return;
+        }
+        pendingSetup = null;
+        showMsg(setupStep2Msg, "", "");
+        await showEditor();
+      } catch {
+        showMsg(setupStep2Msg, "网络错误，请重试", "error");
+      }
+    };
 
     document.getElementById("loginForm").addEventListener("submit", async (event) => {
       event.preventDefault();
@@ -282,10 +407,21 @@
     };
 
     (async () => {
-      if (await checkSession()) {
-        await showEditor();
-      } else {
-        loginPanel.classList.remove("hidden");
+      try {
+        const res = await fetch("/api/session", { cache: "no-store" });
+        const data = await res.json();
+        if (data.authenticated) {
+          await showEditor();
+        } else if (!data.configured) {
+          if (data.setupTokenRequired) {
+            document.getElementById("setupTokenField").classList.remove("hidden");
+          }
+          showPanel("setup");
+        } else {
+          showPanel("login");
+        }
+      } catch {
+        showPanel("login");
       }
     })();
   </script>

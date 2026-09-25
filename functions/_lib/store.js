@@ -1,4 +1,7 @@
 export const CONTACTS_KEY = "contacts";
+export const ADMIN_CONFIG_KEY = "admin:config";
+export const PENDING_SETUP_PREFIX = "setup:pending:";
+export const PENDING_SETUP_TTL = 600;
 
 export const DEFAULT_CONTACTS = [
   { id: "email", icon: "✉️", label: "邮箱 Email", value: "your@email.com", href: "mailto:your@email.com" },
@@ -43,4 +46,38 @@ export function sanitizeContacts(input) {
 
 export async function saveContacts(env, contacts) {
   await env.CONTACTS_KV.put(CONTACTS_KEY, JSON.stringify(contacts));
+}
+
+export async function getAdminConfig(env) {
+  const raw = await env.CONTACTS_KV.get(ADMIN_CONFIG_KEY);
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
+export async function saveAdminConfig(env, config) {
+  await env.CONTACTS_KV.put(ADMIN_CONFIG_KEY, JSON.stringify(config));
+}
+
+export async function deleteAdminConfig(env) {
+  await env.CONTACTS_KV.delete(ADMIN_CONFIG_KEY);
+}
+
+export async function putPendingSetup(env, id, totpSecret) {
+  await env.CONTACTS_KV.put(PENDING_SETUP_PREFIX + id, totpSecret, {
+    expirationTtl: PENDING_SETUP_TTL,
+  });
+}
+
+export async function getPendingSetup(env, id) {
+  if (!id) return null;
+  return env.CONTACTS_KV.get(PENDING_SETUP_PREFIX + id);
+}
+
+export async function deletePendingSetup(env, id) {
+  if (!id) return;
+  await env.CONTACTS_KV.delete(PENDING_SETUP_PREFIX + id);
 }

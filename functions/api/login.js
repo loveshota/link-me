@@ -1,5 +1,6 @@
-import { createSession, sessionCookie, timingSafeEqual } from "../_lib/auth.js";
+import { createSession, sessionCookie, verifyPassword } from "../_lib/auth.js";
 import { verifyTotp } from "../_lib/totp.js";
+import { getAdminConfig } from "../_lib/store.js";
 
 const SESSION_MAX_AGE = 7 * 24 * 60 * 60;
 
@@ -15,8 +16,9 @@ function json(data, status = 200, headers = {}) {
 }
 
 export async function onRequestPost({ request, env }) {
-  if (!env.ADMIN_PASSWORD || !env.SESSION_SECRET || !env.TOTP_SECRET) {
-    return json({ error: "服务端未配置 ADMIN_PASSWORD / SESSION_SECRET / TOTP_SECRET" }, 500);
+  const config = await getAdminConfig(env);
+  if (!config) {
+    return json({ error: "尚未初始化，请先完成首次设置", setupRequired: true }, 409);
   }
 
   const ip = request.headers.get("CF-Connecting-IP") || "local";
@@ -33,8 +35,12 @@ export async function onRequestPost({ request, env }) {
     return json({ error: "请求格式错误" }, 400);
   }
 
-  const passwordOk = timingSafeEqual(String(body?.password || ""), env.ADMIN_PASSWORD);
-  const totpOk = await verifyTotp(env.TOTP_SECRET, String(body?.totp || ""));
+  const passwordOk = await verifyPassword(
+    String(body?.password || ""),
+    config.passwordSalt,
+    config.passwordHash
+  );
+  const totpOk = await verifyTotp(config.totpSecret, String(body?.totp || ""));
 
   if (!passwordOk || !totpOk) {
     await env.CONTACTS_KV.put(failKey, String(failed + 1), { expirationTtl: 600 });
@@ -42,7 +48,8 @@ export async function onRequestPost({ request, env }) {
   }
 
   await env.CONTACTS_KV.delete(failKey);
-  const token = await createSession(env.SESSION_SECRET);
+  const signingSecret = env.SESSION_SECRET || config.sessionSecret;
+  const token = await createSession(signingSecret);
   return json(
     { ok: true },
     200,

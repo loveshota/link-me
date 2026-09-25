@@ -2,6 +2,34 @@ import { timingSafeEqual } from "./auth.js";
 
 const ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
 
+function base32Encode(bytes) {
+  let bits = 0;
+  let value = 0;
+  let output = "";
+  for (const byte of bytes) {
+    value = (value << 8) | byte;
+    bits += 8;
+    while (bits >= 5) {
+      output += ALPHABET[(value >>> (bits - 5)) & 31];
+      bits -= 5;
+    }
+  }
+  if (bits > 0) output += ALPHABET[(value << (5 - bits)) & 31];
+  return output;
+}
+
+export function generateTotpSecret(byteLength = 20) {
+  return base32Encode(crypto.getRandomValues(new Uint8Array(byteLength)));
+}
+
+export function otpauthUri(secret, label = "admin", issuer = "link-me") {
+  return (
+    `otpauth://totp/${encodeURIComponent(issuer)}:${encodeURIComponent(label)}` +
+    `?secret=${secret}&issuer=${encodeURIComponent(issuer)}` +
+    `&algorithm=SHA1&digits=6&period=30`
+  );
+}
+
 function base32Decode(input) {
   const clean = String(input).toUpperCase().replace(/[\s=]/g, "");
   let bits = 0;
