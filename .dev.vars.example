@@ -1,0 +1,3 @@
+ADMIN_PASSWORD=replace-with-a-strong-password
+SESSION_SECRET=replace-with-32-byte-random-hex
+TOTP_SECRET=REPLACE_WITH_BASE32_TOTP_SECRET

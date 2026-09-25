@@ -48,12 +48,7 @@
       color: #0f172a;
     }
     h1 { font-size: 22px; text-align: center; }
-    .subtitle {
-      text-align: center;
-      color: var(--muted);
-      font-size: 14px;
-      margin: 8px 0 26px;
-    }
+    .subtitle { text-align: center; color: var(--muted); font-size: 14px; margin: 8px 0 26px; }
     .links { display: flex; flex-direction: column; gap: 12px; }
     a.link {
       display: flex;
@@ -85,12 +80,10 @@
     }
     .label { font-size: 13px; color: var(--muted); }
     .value { font-size: 15px; word-break: break-all; }
-    footer {
-      margin-top: 24px;
-      text-align: center;
-      font-size: 12px;
-      color: var(--muted);
-    }
+    .empty, .error { text-align: center; color: var(--muted); font-size: 14px; padding: 12px 0; }
+    .error { color: #f87171; }
+    footer { margin-top: 24px; text-align: center; font-size: 12px; color: var(--muted); }
+    footer a { color: var(--muted); }
   </style>
 </head>
 <body>
@@ -99,43 +92,44 @@
     <h1>Your Name</h1>
     <p class="subtitle">Your Tagline · 欢迎随时联系</p>
 
-    <nav class="links">
-      <a class="link" href="mailto:your@email.com">
-        <span class="icon">✉️</span>
-        <span><span class="label">邮箱 Email</span><br /><span class="value">your@email.com</span></span>
-      </a>
-      <a class="link" href="https://t.me/your_username">
-        <span class="icon">➤</span>
-        <span><span class="label">Telegram</span><br /><span class="value">@your_username</span></span>
-      </a>
-      <a class="link" href="https://discord.com/users/your_id">
-        <span class="icon">🎮</span>
-        <span><span class="label">Discord</span><br /><span class="value">your_username#0000</span></span>
-      </a>
-      <a class="link" href="https://x.com/your_username">
-        <span class="icon">𝕏</span>
-        <span><span class="label">X / Twitter</span><br /><span class="value">@your_username</span></span>
-      </a>
-      <a class="link" href="https://www.linkedin.com/in/your_username">
-        <span class="icon">💼</span>
-        <span><span class="label">LinkedIn</span><br /><span class="value">linkedin.com/in/your_username</span></span>
-      </a>
-      <a class="link" href="https://www.instagram.com/your_username">
-        <span class="icon">📸</span>
-        <span><span class="label">Instagram</span><br /><span class="value">@your_username</span></span>
-      </a>
-      <a class="link" href="https://github.com/loveshota">
-        <span class="icon">🐙</span>
-        <span><span class="label">GitHub</span><br /><span class="value">github.com/loveshota</span></span>
-      </a>
-      <a class="link" href="https://your-website.com">
-        <span class="icon">🌐</span>
-        <span><span class="label">网站 Website</span><br /><span class="value">your-website.com</span></span>
-      </a>
+    <nav class="links" id="links">
+      <p class="empty">加载中…</p>
     </nav>
 
-    <footer>© <span id="year"></span> Your Name</footer>
+    <footer>© <span id="year"></span> Your Name · <a href="/admin">管理</a></footer>
   </main>
-  <script>document.getElementById("year").textContent = new Date().getFullYear();</script>
+
+  <script>
+    document.getElementById("year").textContent = new Date().getFullYear();
+
+    function escapeHtml(value) {
+      return String(value).replace(/[&<>"']/g, (char) => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+      }[char]));
+    }
+
+    function render(contacts) {
+      const container = document.getElementById("links");
+      if (!contacts.length) {
+        container.innerHTML = '<p class="empty">暂无联系方式</p>';
+        return;
+      }
+      container.innerHTML = contacts.map((item) => {
+        const href = escapeHtml(item.href || "#");
+        const external = /^https?:/i.test(item.href || "") ? ' target="_blank" rel="noopener noreferrer"' : "";
+        return '<a class="link" href="' + href + '"' + external + '>' +
+          '<span class="icon">' + escapeHtml(item.icon || "🔗") + "</span>" +
+          '<span><span class="label">' + escapeHtml(item.label || "") + "</span><br />" +
+          '<span class="value">' + escapeHtml(item.value || "") + "</span></span></a>";
+      }).join("");
+    }
+
+    fetch("/api/contacts", { cache: "no-store" })
+      .then((res) => res.json())
+      .then((data) => render(Array.isArray(data.contacts) ? data.contacts : []))
+      .catch(() => {
+        document.getElementById("links").innerHTML = '<p class="error">加载失败，请稍后重试</p>';
+      });
+  </script>
 </body>
 </html>
