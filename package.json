@@ -4,8 +4,21 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "wrangler pages dev",
-    "deploy": "wrangler pages deploy"
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy"
+  },
+  "cloudflare": {
+    "bindings": {
+      "CONTACTS_KV": {
+        "description": "用于存储管理员凭据与联系方式的 KV 命名空间，部署时会自动创建。"
+      },
+      "SETUP_TOKEN": {
+        "description": "可选。初始化口令，设置后首次在 `/admin` 初始化时必须填写相同口令，可防止他人抢先占用管理员。"
+      },
+      "SESSION_SECRET": {
+        "description": "可选。会话签名密钥（64 位十六进制），留空则初始化时自动生成。"
+      }
+    }
   },
   "devDependencies": {
     "wrangler": "^4.0.0"
